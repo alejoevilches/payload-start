@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
   images: {
     localPatterns: [
       {
-        pathname: '/api/media/file/**',
+        pathname: '/api/media/file/**'
       },
     ],
   },
@@ -22,6 +22,10 @@ const nextConfig: NextConfig = {
     }
 
     return webpackConfig
+  },
+  experimental: {
+    cpus: 1,
+    webpackMemoryOptimizations: true,
   },
   turbopack: {
     root: path.resolve(dirname),
