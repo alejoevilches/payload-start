@@ -69,6 +69,9 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    pages: Page;
+    posts: Post;
+    redirects: Redirect;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,17 +81,28 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    pages: PagesSelect<false> | PagesSelect<true>;
+    posts: PostsSelect<false> | PostsSelect<true>;
+    redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    header: Header;
+    footer: Footer;
+    siteSettings: SiteSetting;
+  };
+  globalsSelect: {
+    header: HeaderSelect<false> | HeaderSelect<true>;
+    footer: FooterSelect<false> | FooterSelect<true>;
+    siteSettings: SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -122,7 +136,7 @@ export interface UserAuthOperations {
  * via the `definition` "users".
  */
 export interface User {
-  id: string;
+  id: number;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -130,6 +144,7 @@ export interface User {
   resetPasswordExpiration?: string | null;
   salt?: string | null;
   hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
   loginAttempts?: number | null;
   lockUntil?: string | null;
   sessions?:
@@ -147,7 +162,7 @@ export interface User {
  * via the `definition` "media".
  */
 export interface Media {
-  id: string;
+  id: number;
   alt: string;
   updatedAt: string;
   createdAt: string;
@@ -160,13 +175,244 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+  sizes?: {
+    og?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages".
+ */
+export interface Page {
+  id: number;
+  title: string;
+  slug: string;
+  components?:
+    | {
+        title: string;
+        subtitle?: string | null;
+        id?: string | null;
+        blockName?: string | null;
+        blockType: 'titleSubtitle';
+      }[]
+    | null;
+  /**
+   * What Google and social networks show. If a field is left empty, the page title or the default from Site Settings is used.
+   */
+  seo?: {
+    /**
+     * Title shown on Google. Ideal: up to 60 characters, with the main keyword first.
+     */
+    title?: string | null;
+    /**
+     * Summary shown under the title on Google. Ideal: between 120 and 160 characters.
+     */
+    description?: string | null;
+    /**
+     * If empty, the Meta title is used.
+     */
+    ogTitle?: string | null;
+    /**
+     * If empty, the Meta description is used.
+     */
+    ogDescription?: string | null;
+    /**
+     * Image shown when the link is shared. Recommended: 1200×630 px. If empty, the default image is used.
+     */
+    ogImage?: (number | null) | Media;
+    ogType?: ('website' | 'article') | null;
+    /**
+     * Google will not show this page in search results. It is also left out of the sitemap.
+     */
+    noIndex?: boolean | null;
+    noFollow?: boolean | null;
+    /**
+     * Only if this page duplicates another one. Leave empty to use this page's own URL.
+     */
+    canonicalUrl?: string | null;
+    /**
+     * schema.org scripts for this page (LocalBusiness, FAQPage, Service, etc.). Paste the JSON without the <script> tags.
+     */
+    jsonLd?:
+      | {
+          /**
+           * Internal name to identify it (e.g. "LocalBusiness Bellevue").
+           */
+          label: string;
+          /**
+           * Valid JSON. If the JSON is malformed it cannot be saved.
+           */
+          schema:
+            | {
+                [k: string]: unknown;
+              }
+            | unknown[]
+            | string
+            | number
+            | boolean
+            | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts".
+ */
+export interface Post {
+  id: number;
+  title: string;
+  slug: string;
+  content: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  publishedAt: string;
+  excerpt?: string | null;
+  featuredImage?: (number | null) | Media;
+  cta?: {
+    heading?: string | null;
+    description?: string | null;
+    ctaLabel?: string | null;
+    ctaLink?: string | null;
+  };
+  postFaq?: {
+    title?: string | null;
+    image?: (number | null) | Media;
+    questions?:
+      | {
+          question: string;
+          answer: {
+            root: {
+              type: string;
+              children: {
+                type: any;
+                version: number;
+                [k: string]: unknown;
+              }[];
+              direction: ('ltr' | 'rtl') | null;
+              format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+              indent: number;
+              version: number;
+            };
+            [k: string]: unknown;
+          };
+          id?: string | null;
+        }[]
+      | null;
+  };
+  category?: ('General' | 'News') | null;
+  /**
+   * What Google and social networks show. If a field is left empty, the page title or the default from Site Settings is used.
+   */
+  seo?: {
+    /**
+     * Title shown on Google. Ideal: up to 60 characters, with the main keyword first.
+     */
+    title?: string | null;
+    /**
+     * Summary shown under the title on Google. Ideal: between 120 and 160 characters.
+     */
+    description?: string | null;
+    /**
+     * If empty, the Meta title is used.
+     */
+    ogTitle?: string | null;
+    /**
+     * If empty, the Meta description is used.
+     */
+    ogDescription?: string | null;
+    /**
+     * Image shown when the link is shared. Recommended: 1200×630 px. If empty, the default image is used.
+     */
+    ogImage?: (number | null) | Media;
+    ogType?: ('website' | 'article') | null;
+    /**
+     * Google will not show this page in search results. It is also left out of the sitemap.
+     */
+    noIndex?: boolean | null;
+    noFollow?: boolean | null;
+    /**
+     * Only if this page duplicates another one. Leave empty to use this page's own URL.
+     */
+    canonicalUrl?: string | null;
+    /**
+     * schema.org scripts for this page (LocalBusiness, FAQPage, Service, etc.). Paste the JSON without the <script> tags.
+     */
+    jsonLd?:
+      | {
+          /**
+           * Internal name to identify it (e.g. "LocalBusiness Bellevue").
+           */
+          label: string;
+          /**
+           * Valid JSON. If the JSON is malformed it cannot be saved.
+           */
+          schema:
+            | {
+                [k: string]: unknown;
+              }
+            | unknown[]
+            | string
+            | number
+            | boolean
+            | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * 301/302 redirects. They are created automatically when the slug of a page or post changes.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects".
+ */
+export interface Redirect {
+  id: number;
+  /**
+   * Old path, e.g. /roofing-seattle
+   */
+  from: string;
+  /**
+   * New path (/roofing/seattle) or full URL (https://...)
+   */
+  to: string;
+  type: '301' | '302';
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: string;
+  id: number;
   key: string;
   data:
     | {
@@ -183,20 +429,32 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'pages';
+        value: number | Page;
+      } | null)
+    | ({
+        relationTo: 'posts';
+        value: number | Post;
+      } | null)
+    | ({
+        relationTo: 'redirects';
+        value: number | Redirect;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -206,10 +464,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   key?: string | null;
   value?:
@@ -229,7 +487,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -247,6 +505,7 @@ export interface UsersSelect<T extends boolean = true> {
   resetPasswordExpiration?: T;
   salt?: T;
   hash?: T;
+  resetPasswordRequestedAt?: T;
   loginAttempts?: T;
   lockUntil?: T;
   sessions?:
@@ -274,6 +533,131 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+  sizes?:
+    | T
+    | {
+        og?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages_select".
+ */
+export interface PagesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  components?:
+    | T
+    | {
+        titleSubtitle?:
+          | T
+          | {
+              title?: T;
+              subtitle?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        ogTitle?: T;
+        ogDescription?: T;
+        ogImage?: T;
+        ogType?: T;
+        noIndex?: T;
+        noFollow?: T;
+        canonicalUrl?: T;
+        jsonLd?:
+          | T
+          | {
+              label?: T;
+              schema?: T;
+              id?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts_select".
+ */
+export interface PostsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  content?: T;
+  publishedAt?: T;
+  excerpt?: T;
+  featuredImage?: T;
+  cta?:
+    | T
+    | {
+        heading?: T;
+        description?: T;
+        ctaLabel?: T;
+        ctaLink?: T;
+      };
+  postFaq?:
+    | T
+    | {
+        title?: T;
+        image?: T;
+        questions?:
+          | T
+          | {
+              question?: T;
+              answer?: T;
+              id?: T;
+            };
+      };
+  category?: T;
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        ogTitle?: T;
+        ogDescription?: T;
+        ogImage?: T;
+        ogType?: T;
+        noIndex?: T;
+        noFollow?: T;
+        canonicalUrl?: T;
+        jsonLd?:
+          | T
+          | {
+              label?: T;
+              schema?: T;
+              id?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects_select".
+ */
+export interface RedirectsSelect<T extends boolean = true> {
+  from?: T;
+  to?: T;
+  type?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -314,6 +698,151 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "header".
+ */
+export interface Header {
+  id: number;
+  logo?: (number | null) | Media;
+  navLinks?:
+    | {
+        label: string;
+        href: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "footer".
+ */
+export interface Footer {
+  id: number;
+  links?:
+    | {
+        label: string;
+        href: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "siteSettings".
+ */
+export interface SiteSetting {
+  id: number;
+  phone?: string | null;
+  email?: string | null;
+  /**
+   * Values used when a page leaves its own SEO field empty.
+   */
+  seo?: {
+    /**
+     * Production domain without a trailing slash, e.g. https://www.example.com
+     */
+    siteUrl?: string | null;
+    /**
+     * e.g. Example Company
+     */
+    siteName?: string | null;
+    /**
+     * Added at the end of every title. e.g. " | Example"
+     */
+    titleSuffix?: string | null;
+    defaultDescription?: string | null;
+    defaultOgImage?: (number | null) | Media;
+    /**
+     * e.g. @example
+     */
+    twitterHandle?: string | null;
+  };
+  /**
+   * Leave empty whatever you don't use: only tools with an ID are loaded.
+   */
+  tracking?: {
+    /**
+     * e.g. GTM-XXXXXXX
+     */
+    gtmId?: string | null;
+    /**
+     * e.g. G-XXXXXXXXXX
+     */
+    gaId?: string | null;
+    /**
+     * Numbers only
+     */
+    metaPixelId?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "header_select".
+ */
+export interface HeaderSelect<T extends boolean = true> {
+  logo?: T;
+  navLinks?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "footer_select".
+ */
+export interface FooterSelect<T extends boolean = true> {
+  links?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "siteSettings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  phone?: T;
+  email?: T;
+  seo?:
+    | T
+    | {
+        siteUrl?: T;
+        siteName?: T;
+        titleSuffix?: T;
+        defaultDescription?: T;
+        defaultOgImage?: T;
+        twitterHandle?: T;
+      };
+  tracking?:
+    | T
+    | {
+        gtmId?: T;
+        gaId?: T;
+        metaPixelId?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

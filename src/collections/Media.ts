@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import path from 'path'
 
 export const Media: CollectionConfig = {
   slug: 'media',
@@ -12,5 +13,8 @@ export const Media: CollectionConfig = {
       required: true,
     },
   ],
-  upload: true,
+  upload: {
+    imageSizes: [{ name: 'og', width: 1200, height: 630, fit: 'cover' }],
+    staticDir: process.env.MEDIA_DIR || path.resolve(process.cwd(), 'media'),
+  },
 }
